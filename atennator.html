@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Attendance Calculator</title>
+<style>
+  :root{
+    --blue:#ffffff;
+    --blue-dark:#e6e6e6;
+    --bg:#0d1117;
+    --card:#161b22;
+    --shadow:0 10px 40px rgba(0,0,0,0.5);
+  }
+  *{box-sizing:border-box;margin:0;padding:0;font-family:Inter, Arial}
+  body{
+    background:var(--bg);
+    padding:20px;
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    min-height:100vh;
+    color:white;
+  }
+
+  .card{
+    width:100%;
+    max-width:800px;
+    background:var(--card);
+    border-radius:20px;
+    padding:28px;
+    box-shadow:var(--shadow);
+    border:1px solid cyan;
+    animation:fadeIn 0.5s ease;
+  }
+
+  @keyframes fadeIn{
+    from{opacity:0; transform:translateY(10px)}
+    to{opacity:1; transform:translateY(0)}
+  }
+
+  h1{
+    font-size:28px;
+    text-align:center;
+    margin-bottom:18px;
+    background:linear-gradient(90deg,#ffffff,#ffffff);
+    -webkit-background-clip:text;
+    -webkit-text-fill-color:transparent;
+  }
+
+  .section{
+    background:#1f242d;
+    padding:20px;
+    border-radius:14px;
+    border-left:6px solid var(--blue);
+    margin-bottom:18px;
+  }
+
+  label{font-weight:600;color:white;margin-bottom:6px;display:block}
+  select,input{ width:100%;padding:14px;border-radius:10px;border:1px solid cyan;font-size:16px;background:#0d1117;color:white;
+  }
+
+  .flex{display:flex;gap:16px}
+  .col{flex:1}
+
+  button{
+    width:100%;padding:14px;border-radius:12px;border:2px solid cyan;
+    background:var(--blue);color:black;font-size:18px;font-weight:700;
+    cursor:pointer;transition:0.2s;
+  }
+  button:hover{background:var(--blue-dark)}
+
+  .result{
+    margin-top:20px;background:#1f242d;padding:20px;border-radius:14px;
+    border-left:6px solid var(--blue-dark);
+  }
+  .result p{margin:8px 0;color:#e6edf3;font-size:16px}
+
+</style>
+</head>
+<body>
+<div class="card">
+
+  <h1>Attendance Calculator</h1>
+
+  <div class="section">
+    <label>What type of student are you?</label>
+    <select id="studentType">
+      <option value="fybtech">FY B.Tech</option>
+      <option value="sybtech">SY B.Tech</option>
+      <option value="tybtech">TY B.Tech</option>
+      <option value="ssc">School Student (SSC)</option>
+      <option value="hsc">School Student (HSC)</option>
+      <option value="other">Other Student</option>
+    </select>
+  </div>
+
+  <div class="section">
+    <label>Weekly Lectures</label>
+    <div class="flex">
+      <div class="col">
+        <label>Total Lectures</label>
+        <input id="w_total" type="number" placeholder="e.g. 20" />
+      </div>
+      <div class="col">
+        <label>Attended Lectures</label>
+        <input id="w_attended" type="number" placeholder="e.g. 15" />
+      </div>
+    </div>
+    <p style="margin-top:10px;color:#45526b">Monthly attendance = weekly × 4</p>
+  </div>
+
+  <button id="calcBtn">Calculate</button>
+
+  <div id="resultBox" class="result" style="display:none">
+    <p id="currentAttendance"></p>
+    <p id="need75"></p>
+    <p id="need90"></p>
+    <p id="hint" style="color:#4d5c78;font-size:14px"></p>
+  </div>
+</div>
+
+<script>
+// JS logic unchanged
+(function(){
+  const btn = document.getElementById('calcBtn');
+  const wTotalEl = document.getElementById('w_total');
+  const wAttendedEl = document.getElementById('w_attended');
+  const resultBox = document.getElementById('resultBox');
+  const currentAttendance = document.getElementById('currentAttendance');
+  const need75 = document.getElementById('need75');
+  const need90 = document.getElementById('need90');
+  const hint = document.getElementById('hint');
+
+  function isPositiveInt(n){return Number.isFinite(n) && n >= 0;}
+  
+  function calcExtraIfNewClassesAllowed(total, attended, target){
+    const numerator = target * total - attended;
+    const denom = 1 - target;
+    return Math.max(0, Math.ceil(numerator / denom));
+  }
+
+  function calcNeededWithinScheduled(total, attended, target){
+    return Math.max(0, Math.ceil(target * total - attended));
+  }
+
+  btn.addEventListener('click', function(){
+    const weeklyTotal = Number(wTotalEl.value);
+    const weeklyAttended = Number(wAttendedEl.value);
+
+    if(!isPositiveInt(weeklyTotal) || !isPositiveInt(weeklyAttended)){
+      alert('Please enter valid numbers.');return;
+    }
+    if(weeklyAttended > weeklyTotal){
+      alert('Attended cannot be greater than total.');return;
+    }
+
+    const monthlyTotal = weeklyTotal * 4;
+    const monthlyAttended = weeklyAttended * 4;
+    const percent = (monthlyAttended/monthlyTotal)*100;
+
+    const remaining = monthlyTotal - monthlyAttended;
+
+    const need75Within = calcNeededWithinScheduled(monthlyTotal, monthlyAttended, 0.75);
+    const need90Within = calcNeededWithinScheduled(monthlyTotal, monthlyAttended, 0.90);
+
+    const need75Extra = calcExtraIfNewClassesAllowed(monthlyTotal, monthlyAttended, 0.75);
+    const need90Extra = calcExtraIfNewClassesAllowed(monthlyTotal, monthlyAttended, 0.90);
+
+    currentAttendance.textContent = `Estimated Monthly Attendance: ${percent.toFixed(2)}%`;
+
+    if(need75Within <= remaining){
+      need75.textContent = `Attend ${need75Within} of ${remaining} remaining lectures to reach 75%.`;
+    } else {
+      need75.textContent = `Impossible within scheduled lectures. You need ${need75Extra} extra conducted lectures to reach 75%.`;
+    }
+
+    if(need90Within <= remaining){
+      need90.textContent = `Attend ${need90Within} of ${remaining} remaining lectures to reach 90%.`;
+    } else {
+      need90.textContent = `Impossible within scheduled lectures. You need ${need90Extra} extra conducted lectures to reach 90%.`;
+    }
+
+    hint.textContent = 'This uses the formula: Monthly = Weekly × 4';
+    resultBox.style.display = 'block';
+  });
+})();
+</script>
+</body>
+</html>
